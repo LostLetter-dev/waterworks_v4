@@ -4,29 +4,35 @@
 // General
 wavesPassed <- -1 // Used more by roundManager, updates every horde event.
 gameON <- false // used to determine if OLT hooks should fire
+DONSpawn <- false // Redundancy.
+
+shipHealth <- 4000 // Used by the battleship
+cannons <- ["boomTillery1", "boomTillery1"] // used to spawn falling boomers while the Battleship is active
+shipTemplates <- ["templateShip1", "templateShip2"]
+shipSpot <- 0 // What side of the map the Battleship is currently at.
+shipWaves <- 0 // How long the battleship has lived.
+shipActive <- false // Turn this to true while ship is 'alive'. Ship can be killed before wave ends.
 
 // Used by OLT and potentially Disorderly Combat
 
 survivors <- [
-    {name = "Ellis", maxHP = 100, entity = null}
-    {name = "Nick", maxHP = 100, entity = null}
-    {name = "Coach", maxHP = 100, entity = null}
-    {name = "Rochelle", maxHP = 100, entity = null}
+    {name = "Ellis", maxHP = 100, entity = null, panicked = false}
+    {name = "Nick", maxHP = 100, entity = null, panicked = false}
+    {name = "Coach", maxHP = 100, entity = null, panicked = false}
+    {name = "Rochelle", maxHP = 100, entity = null, panicked = false}
 ];
-
-DONSpawn <- false // Double or nothing 'something is spawning' check.
 
 // warnLunar.nut (Lunar Modifiers)
 
 modifiers <- [
-    {type = "wave", name = "Dog Rounds", score = 2, desc = "Tanks with low health spawn during special waves.", threat = 5, enabled = false, alternateNames = ["butterian"], intName = "dog", cmod = 0, waveName = "dog"} // 0
-    {type = "wave", name = "Cat Rounds", score = 2, desc = "Spawn wandering witches during special waves.", threat = 3, enabled = false, alternateNames = ["witches and whores"], intName = "cat", cmod = 0, waveName = "Cats"} // 1
-    {type = "special", name = "The Battleship", score = 4, desc = "Map's dedicated boss fight.", threat = 5, enabled = false, alternateNames = ["Valenguardian Intervention"], intName = "ship", cmod = 0, waveName = "The Battleship"} // 2
-    {type = "general", name = "Disorderly Combat", score = 2, desc = "No ammo piles or permanent guns - buy weapons to survive.", threat = 0, enabled = false, alternateNames = [], intName = "DC", cmod = 0, waveName = ""} //3
+    {type = "wave", name = "Dog Rounds", score = 2, desc = "Tanks with low health spawn during special waves.", threat = 15, enabled = false, alternateNames = ["butterian"], intName = "dog", cmod = 0, waveName = "dog"} // 0
+    {type = "wave", name = "Cat Rounds", score = 2, desc = "Spawn wandering witches during special waves.", threat = 99, enabled = false, alternateNames = ["witches and whores"], intName = "cat", cmod = 0, waveName = "Cats"} // 1
+    {type = "wave", name = "The Battleship", score = 4, desc = "Map's dedicated boss fight.", threat = 9, enabled = false, alternateNames = ["Valenguardian Intervention"], intName = "ship", cmod = 0, waveName = "The Battleship"} // 2
+    {type = "general", name = "Disorderly Combat", score = 2, desc = "No permanent guns and no gurantee of items - Utter chaos.", threat = 8, enabled = false, alternateNames = [], intName = "DC", cmod = 0, waveName = ""} //3
     {type = "general", name = "Double or Nothing", score = 3, desc = "Some things doubled, some things halved.", threat = 0, enabled = false, alternateNames = [], intName = "DoN", cmod = 1, waveName = ""} // 4
-    {type = "general", name = "One Last Thrill", score = 4, desc = "Max health decreases every hit you take.", threat = 0, enabled = false, alternateNames = [], intName = "OLT", cmod = 0, waveName = ""} // 5
+    {type = "general", name = "One Last Thrill", score = 4, desc = "(BUGGY - OPTIONAL) Max health decreases every hit you take.", threat = 0, enabled = false, alternateNames = [], intName = "OLT", cmod = 0, waveName = ""} // 5
     {type = "special", name = "Spit-tastic!", score = 3, desc = "Spitters. Lots of them.", threat = 99, enabled = false, alternateNames = ["7 Spitters"], intName = "spit", cmod = 0, waveName = ""} // 6
-    {type = "special", name = "The True Waterworks", score = 15, desc = "(IS YOUR TEARS)", threat = 99, enabled = false, alternateNames = [], intName = "WATERWORKS", cmod = -1.25, waveName = ""} // 7 (Keep this at bottom)
+    {type = "wave", name = "The True Waterworks", score = 7, desc = "All modifiers combined into one.", threat = 99, enabled = false, alternateNames = ["The True Waterworks"], intName = "W", cmod = -1.25, waveName = "The True Waterworks"} // 7 (Keep this at bottom)
 ];
 
 traps <- [
@@ -44,17 +50,8 @@ extras <- [
 // Might be redundant?
 
 cMod <- [
-    
-];
-
-// cGen lists all of the currently added 'general' or 'special' modifiers.
-// Splitting them should increase performance *and* might reduce my confusion later.
-
-cGen <- [
 
 ];
-
-
 
 lunarScore <- 0
 
@@ -62,25 +59,26 @@ lunarScore <- 0
 //// Shouldn't have any.
 
 // roundManager.nut
-waveNext <- 0
+waveNext <- RandomInt(2, 4)
 waveType <- "none" // Current wave.
 validWaves <- ["none"]
-
-specialPassed <- 0 // Counts how many special waves have passed. Might be used for music handling later. (POTENTIAL REDUNDANCY)
 
 // musicManager.nut
 
 baseMus <- ["phase1mus", "phase2mus", "phase3mus"] // Base audio entities..
 baseMusLEN <- [3, 4, 3] // Base audio wave length 1m == 1 wave (ROUND DOWN WAVES)
 
-RORMus <- [] // Risk of Rain audio entities. UNUSED RIGHT NOW
-RORMusLEN <- [] // read baseMusLEN
+rareMus <- []
+
+RORMus <- ["ror1mus", "ror2mus", "ror3mus"] // Risk of Rain audio entities. UNUSED RIGHT NOW
+RORMusLEN <- [3, 4, 3] // read baseMusLEN
 mustype <- 0
 
 specialMus <- [] // Rare music. Only to be played in certain events. UNUSED RIGHT NOW
 
 // shop.nut
 
+louisReal <- false
 teamCurrency <- 30 // Set to testing value. (Lower later)
 Currencymod <- 1 // Multiplicator for currency gained each wave.
 
@@ -93,7 +91,7 @@ printl("Global variables init")
 function OnGameEvent_round_end( params )
 {
     // Kill louis.
-    printl("h")
+    ClientPrint(null, DirectorScript.HUD_PRINTTALK, "\x04" + "WAVES SURVIVED: " + wavesPassed + ", LUNAR SCORE: " + lunarScore + ", TOTAL: " + (wavesPassed * lunarScore))
 
     local louis = Entities.FindByModel(null, "models/survivors/survivor_manager.mdl")
     if (louis != null)
