@@ -11,9 +11,13 @@ function spawnDog()
         while ( dog = Entities.FindByClassnameWithin(dog, "player", spawnpoint, 100) )
         {
             {
-                printl("DOG FOUND! CRIPPLING.")
-                dog.SetHealth(600)
-                NetProps.SetPropInt(dog, "m_clrRender", 80)
+                if (dog != null)
+                {
+                    dog.SetHealth(450)
+                    NetProps.SetPropInt(dog, "m_clrRender", 80)
+                }
+
+
             }
         }
 
@@ -22,7 +26,6 @@ function spawnDog()
 
 function superSpitter()
 {
-    printl("SPAWNING SPITTERS")
     if (waveType != null)
     {
         local i = 1
@@ -46,7 +49,7 @@ function superSpitter()
 function spawnCat()
 {
     // TODO: Create cats.
-    // Aka, wandering witches (in blue)
+    // Aka, wandering witches
 
 
     local cat = null
@@ -56,6 +59,10 @@ function spawnCat()
     {
         spawnpoint = spawner.GetOrigin()
         cat = Entities.FindByClassnameNearest("witch", spawnpoint, 100);
-        cat.SetHealth(700)
+        if (cat != null)
+        {
+            cat.SetHealth(350)
+        }
+
     }
 }
